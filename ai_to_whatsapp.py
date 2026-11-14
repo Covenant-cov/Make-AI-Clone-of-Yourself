@@ -2,11 +2,29 @@ from WPP_Whatsapp import Create
 from langchain_core.messages import HumanMessage, AIMessage
 import logging
 import csv
-from chat import LLM
+import os
 
-#========LLM(Model_name, temperature, top_k, max_tokens)
+if os.environ.get("CLONE_BACKEND") == "claude":
+    # Claude backend with privacy filtering and hand-off guardrails (see clone/).
+    from clone.__main__ import load_clone
 
-my_llm = LLM("my_model", 0.3, 50, 128)
+    class _ClaudeBackend:
+        def __init__(self):
+            self.clone = load_clone(mock=False)
+
+        def chat(self, text):
+            result = self.clone.reply(text)
+            if result.handed_off:
+                print(f"!! Needs your reply ({result.reason}). Sent a holding message instead.")
+            return result.text
+
+    my_llm = _ClaudeBackend()
+else:
+    from chat import LLM
+
+    #========LLM(Model_name, temperature, top_k, max_tokens)
+
+    my_llm = LLM("my_model", 0.3, 50, 128)
 
 # logger = logging.getLogger(name="WPP_Whatsapp")
 # logger.setLevel(logging.DEBUG)

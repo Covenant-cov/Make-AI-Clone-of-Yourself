@@ -1,5 +1,47 @@
 # Make-AI-Clone-of-Yourself
 
+> **This is a fork.** The original project, which fine-tunes Llama 3 on your WhatsApp history and replies through Ollama, is by [Eviltr0N](https://github.com/Eviltr0N/Make-AI-Clone-of-Yourself). Its README follows below, unchanged.
+>
+> **What I added in this fork (by [Covenant Odeyemi](https://github.com/Covenant-cov)):** a privacy-first pipeline and a Claude backend, in the `clone/` folder.
+
+## Added in this fork: privacy-first pipeline with a Claude backend
+
+The original sends your raw chats into training and lets the model reply to anyone about anything. I wanted a version I'd trust with real conversations, so I added:
+
+| Piece | What it does |
+|---|---|
+| `clone/parser.py` | Parses WhatsApp exports from **Android and iPhone**, joins multi-line messages, drops system notices, media placeholders and deleted messages. |
+| `clone/redact.py` | **Removes personal data before anything is saved or sent to a model:** names (each person gets a stable `[CONTACT_n]` tag), phone numbers, emails, links, card numbers (Luhn-checked) and one-time codes. Prints a count of what it removed. |
+| `clone/dataset.py` | Builds message → reply pairs from the redacted chats. Reads `.zip` exports in memory, so media files are never unpacked to disk. |
+| `clone/guardrails.py` | **Hand-off rules.** Messages about money, codes or passwords, emergencies, commitments, or "is this a bot?" never reach the model. The clone sends a holding reply and alerts you. Outgoing replies are scrubbed again and capped in length. |
+| `clone/clone.py` | Replies **with Claude** (`claude-opus-5-5`) instead of a fine-tuned local model. Style comes from your redacted examples in a cached system prompt, so there's no GPU or training step. The first reply in each chat says it's an AI assistant. Includes an offline mock for demos and tests. |
+| `tests/` | 20 pytest tests covering parsing, redaction, hand-off rules and the exact Claude request. |
+
+**Why Claude instead of fine-tuning?** Fine-tuning needs a GPU and a training run every time your style changes. Few-shot examples in a cached prompt adapt instantly and cost little per message. Because the examples are redacted first, the model never sees your contacts' real names or numbers.
+
+### Quick start
+
+```bash
+pip install -r requirements-claude.txt
+python -m pytest                                   # 20 tests, no API key needed
+
+# 1. Put your exported chats (.txt or .zip) in chats/, then build the redacted dataset
+python -m clone prepare chats/ --me "Your Name"
+
+# 2. Chat with your clone in the terminal (uses the offline mock until you set an API key)
+python -m clone chat
+```
+
+Set `ANTHROPIC_API_KEY` to use Claude. To connect it to WhatsApp, install `requirements.txt` too and run `CLONE_BACKEND=claude python ai_to_whatsapp.py`.
+
+Chat exports, datasets and logs are in `.gitignore`, so they can't be committed by accident.
+
+Try it on the made-up sample chat: `python -m clone prepare examples/ --me "Sam Okafor"`.
+
+---
+
+## Original README (by Eviltr0N)
+
 ### Full Video Tutorial on [Youtube](https://youtu.be/a2_ZvzE55cA) - <https://youtu.be/a2_ZvzE55cA>
 
 ## Motivation

@@ -1,0 +1,4 @@
+# For the Claude backend and privacy pipeline in clone/ (Python 3.10+).
+anthropic==2.8.0
+pytest==9.2.0
+# To connect the clone to WhatsApp as well, also install requirements.txt.
